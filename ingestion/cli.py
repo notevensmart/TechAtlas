@@ -235,6 +235,45 @@ def _crawl_all(args: argparse.Namespace) -> None:
     print(f"Crawl-all completed: sources={len(sources)} extracted={len(canonical_rows)}")
 
 
+def _scheduled_crawl(args: argparse.Namespace) -> None:
+    import json
+
+    from app.services.scheduled_crawl import run_scheduled_crawl
+
+    try:
+        result = run_scheduled_crawl(
+            registry_path=Path(args.sources) if args.sources else None,
+            selected_source_keys=args.source or None,
+            profile_name=args.profile,
+            max_urls=args.max_urls,
+            delay=args.delay,
+            timeout=args.timeout,
+            canonical_output_path=Path(args.canonical_output) if args.canonical_output else None,
+            rejects_dir=Path(args.rejects_dir) if args.rejects_dir else None,
+            insecure_skip_tls_verify=args.insecure_skip_tls_verify,
+            user_agent=args.user_agent,
+            expire_after_days=args.expire_after_days,
+            expire_after_successful_crawls=args.expire_after_successful_crawls,
+            expire_partial_sources=args.expire_partial_sources,
+            dry_run=args.dry_run,
+        )
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "command": "scheduled-crawl",
+                    "status": "failed",
+                    "error_message": str(exc),
+                },
+                ensure_ascii=True,
+                sort_keys=True,
+            )
+        )
+        raise SystemExit(2) from exc
+
+    print(result.to_json())
+
+
 def _source_report(args: argparse.Namespace) -> None:
     from sqlalchemy import select
 
@@ -389,6 +428,67 @@ def build_parser() -> argparse.ArgumentParser:
     crawl_all_parser.add_argument("--canonical-output", help="Optional JSONL path for canonical extracted rows")
     crawl_all_parser.add_argument("--rejects-dir", help="Optional directory for per-source reject CSV reports")
     crawl_all_parser.set_defaults(func=_crawl_all)
+
+    scheduled_parser = subparsers.add_parser(
+        "scheduled-crawl",
+        help="Run enabled configured sources with automation-safe profiles, import, freshness, and expiry",
+    )
+    scheduled_parser.add_argument("--sources", help="Path to source registry YAML")
+    scheduled_parser.add_argument(
+        "--source",
+        action="append",
+        help="Source key to crawl. Repeat for multiple keys. Defaults to all enabled sources.",
+    )
+    scheduled_parser.add_argument(
+        "--profile",
+        choices=["conservative", "normal", "heavy"],
+        default="conservative",
+        help="Crawl profile. Defaults to conservative for unattended runs.",
+    )
+    scheduled_parser.add_argument("--max-urls", type=int, help="Override profile/source max pages per source")
+    scheduled_parser.add_argument("--delay", type=float, help="Override profile per-host delay between requests")
+    scheduled_parser.add_argument("--timeout", type=float, help="Override profile HTTP request timeout in seconds")
+    scheduled_parser.add_argument(
+        "--user-agent",
+        default="TechAtlasBot/0.1 (+local portfolio project)",
+        help="Crawler User-Agent sent to target sites",
+    )
+    scheduled_parser.add_argument(
+        "--canonical-output",
+        help="Optional JSONL path for canonical extracted rows",
+    )
+    scheduled_parser.add_argument(
+        "--rejects-dir",
+        help="Optional directory for per-source reject CSV reports",
+    )
+    scheduled_parser.add_argument(
+        "--expire-after-days",
+        type=int,
+        default=45,
+        help="Expire unobserved listings after this many days since last_seen_at",
+    )
+    scheduled_parser.add_argument(
+        "--expire-after-successful-crawls",
+        type=int,
+        default=3,
+        help="Expire unobserved listings after this many successful source crawls since last_seen_at",
+    )
+    scheduled_parser.add_argument(
+        "--expire-partial-sources",
+        action="store_true",
+        help="Allow expiry for partial or low-confidence adapters such as search-result card sources",
+    )
+    scheduled_parser.add_argument(
+        "--insecure-skip-tls-verify",
+        action="store_true",
+        help="Disable TLS certificate verification for local debugging only",
+    )
+    scheduled_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Resolve sources and profile without fetching, importing, or expiring listings",
+    )
+    scheduled_parser.set_defaults(func=_scheduled_crawl)
 
     report_parser = subparsers.add_parser("source-report", help="Show recent configured crawler runs")
     report_parser.add_argument("--limit", type=int, default=20)

@@ -65,6 +65,23 @@ export interface CoOccurrenceItem {
   strength_score: number;
 }
 
+export interface SourceHealthItem {
+  source: string;
+  adapter: string | null;
+  latest_status: string | null;
+  latest_crawl_finished_at: string | null;
+  pages_fetched: number;
+  pages_skipped: number;
+  rows_extracted: number;
+  rows_imported: number;
+  total_listings: number;
+  period_listings: number;
+  latest_listing_listed_at: string | null;
+  first_listing_listed_at: string | null;
+  quality_tier: "high" | "medium" | "low" | string;
+  notes: string | null;
+}
+
 export interface ListingItem {
   id: number;
   source: string;
@@ -93,4 +110,3 @@ export interface ListingsResponse {
   total: number;
   total_pages: number;
 }
-

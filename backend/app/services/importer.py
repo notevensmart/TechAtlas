@@ -246,6 +246,7 @@ def import_rows(
 
             imported += 1
 
+        session.flush()
         refresh_daily_skill_snapshots(session)
 
         run.status = "completed"

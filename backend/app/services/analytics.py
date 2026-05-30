@@ -1,12 +1,13 @@
 from collections import Counter, defaultdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from math import ceil
 from statistics import median
 
-from sqlalchemy import and_, distinct, func, or_, select
+from sqlalchemy import and_, case, distinct, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models import DailySkillSnapshot, ImportRun, Listing, ListingSkill, Skill, Source
+from app.models import CrawlRun, DailySkillSnapshot, ImportRun, Listing, ListingSkill, RawJobRecord, Skill, Source
 from app.schemas.api import (
     BreakdownItem,
     BreakdownsResponse,
@@ -16,8 +17,31 @@ from app.schemas.api import (
     ListingsResponse,
     SkillDemandItem,
     SkillHistoryPoint,
+    SourceHealthItem,
     SummaryStats,
 )
+from app.services.source_registry import load_source_registry
+
+
+HIGH_DETAIL_ADAPTERS = {"ashby-html", "generic-jsonld", "greenhouse-html", "lever-html"}
+PARTIAL_DETAIL_ADAPTERS = {"careerone-search"}
+PDF_DETAIL_ADAPTERS = {"apsjobs-pdf"}
+
+
+@dataclass(frozen=True)
+class _ListingStats:
+    total: int = 0
+    latest: datetime | None = None
+    first: datetime | None = None
+    average_description_length: float | None = None
+    short_description_count: int = 0
+
+
+@dataclass(frozen=True)
+class _RegistrySource:
+    adapter: str | None = None
+    enabled: bool = True
+    compliance_note: str | None = None
 
 
 def _latest_listing_at(session: Session) -> datetime | None:
@@ -292,6 +316,214 @@ def get_breakdowns(session: Session, **filters) -> BreakdownsResponse:
     )
 
 
+def _listing_stats_by_source(session: Session, **filters) -> dict[str, _ListingStats]:
+    ids = _listing_ids_subquery(session, **filters)
+    short_description_count = func.coalesce(
+        func.sum(case((func.length(Listing.description_raw) < 120, 1), else_=0)),
+        0,
+    )
+    rows = session.execute(
+        select(
+            Source.name,
+            func.count(Listing.id),
+            func.max(Listing.listed_at),
+            func.min(Listing.listed_at),
+            func.avg(func.length(Listing.description_raw)),
+            short_description_count,
+        )
+        .select_from(Listing)
+        .join(ids, ids.c.id == Listing.id)
+        .join(Source, Source.id == Listing.source_id)
+        .group_by(Source.name)
+    ).all()
+
+    return {
+        source: _ListingStats(
+            total=count or 0,
+            latest=latest,
+            first=first,
+            average_description_length=float(avg_length) if avg_length is not None else None,
+            short_description_count=short_count or 0,
+        )
+        for source, count, latest, first, avg_length, short_count in rows
+    }
+
+
+def _latest_crawl_runs(session: Session) -> dict[str, CrawlRun]:
+    latest: dict[str, CrawlRun] = {}
+    runs = session.scalars(
+        select(CrawlRun).order_by(CrawlRun.source_key.asc(), CrawlRun.started_at.desc(), CrawlRun.id.desc())
+    ).all()
+    for run in runs:
+        latest.setdefault(run.source_key, run)
+    return latest
+
+
+def _latest_raw_adapters(session: Session) -> dict[str, str]:
+    adapters: dict[str, str] = {}
+    rows = session.execute(
+        select(RawJobRecord.source_key, RawJobRecord.adapter).order_by(
+            RawJobRecord.source_key.asc(),
+            RawJobRecord.observed_at.desc(),
+            RawJobRecord.id.desc(),
+        )
+    ).all()
+    for source_key, adapter in rows:
+        adapters.setdefault(source_key, adapter)
+    return adapters
+
+
+def _registry_sources() -> dict[str, _RegistrySource]:
+    try:
+        sources = load_source_registry()
+    except Exception:
+        return {}
+    return {
+        source.key: _RegistrySource(
+            adapter=source.adapter,
+            enabled=source.enabled,
+            compliance_note=source.compliance_note,
+        )
+        for source in sources
+    }
+
+
+def _description_quality_is_weak(
+    *,
+    total_listings: int,
+    average_description_length: float | None,
+    short_description_count: int,
+) -> bool:
+    if total_listings <= 0 or average_description_length is None:
+        return False
+    if average_description_length < 80:
+        return True
+    return short_description_count >= max(1, total_listings // 2)
+
+
+def source_quality_tier(
+    *,
+    adapter: str | None,
+    latest_status: str | None,
+    rows_extracted: int,
+    total_listings: int,
+    average_description_length: float | None,
+    short_description_count: int,
+) -> str:
+    if latest_status == "failed":
+        return "low"
+    if latest_status is not None and rows_extracted == 0:
+        return "low"
+    if total_listings <= 0:
+        return "low"
+
+    weak_description_quality = _description_quality_is_weak(
+        total_listings=total_listings,
+        average_description_length=average_description_length,
+        short_description_count=short_description_count,
+    )
+    if adapter in PARTIAL_DETAIL_ADAPTERS:
+        return "medium"
+    if adapter in PDF_DETAIL_ADAPTERS:
+        return "medium" if weak_description_quality else "high"
+    if adapter in HIGH_DETAIL_ADAPTERS:
+        return "low" if weak_description_quality else "high"
+    return "medium" if not weak_description_quality else "low"
+
+
+def _source_notes(
+    *,
+    registry: _RegistrySource | None,
+    adapter: str | None,
+    run: CrawlRun | None,
+    stats: _ListingStats,
+) -> str | None:
+    notes: list[str] = []
+    if registry and not registry.enabled:
+        notes.append("Disabled in the source registry.")
+    if registry and registry.compliance_note:
+        notes.append(registry.compliance_note)
+    if run and run.status == "failed":
+        detail = f": {run.error_message}" if run.error_message else "."
+        notes.append(f"Latest crawl failed{detail}")
+    elif run and run.status == "completed" and run.rows_extracted == 0:
+        notes.append("Latest crawl completed but extracted zero rows.")
+    elif run and run.status == "completed" and run.rows_imported == 0:
+        notes.append("Latest crawl completed but imported zero rows.")
+    if adapter in PARTIAL_DETAIL_ADAPTERS and not any("detail pages" in note.lower() for note in notes):
+        notes.append("Search-result cards only; detail pages are not followed.")
+    if adapter in PDF_DETAIL_ADAPTERS:
+        notes.append("Parsed APS detail PDFs; listed_at may be the crawl observation time.")
+    if adapter is None and stats.total > 0:
+        notes.append("Imported source without crawler adapter metadata.")
+    if _description_quality_is_weak(
+        total_listings=stats.total,
+        average_description_length=stats.average_description_length,
+        short_description_count=stats.short_description_count,
+    ):
+        notes.append("Listing descriptions appear short or incomplete.")
+
+    deduped = list(dict.fromkeys(notes))
+    return " ".join(deduped) if deduped else None
+
+
+def get_sources_health(session: Session, **filters) -> list[SourceHealthItem]:
+    total_filters = dict(filters)
+    total_filters["days"] = "all"
+    total_stats = _listing_stats_by_source(session, **total_filters)
+    period_stats = _listing_stats_by_source(session, **filters)
+    latest_runs = _latest_crawl_runs(session)
+    raw_adapters = _latest_raw_adapters(session)
+    registry = _registry_sources()
+
+    db_sources = set(session.scalars(select(Source.name)).all())
+    source_keys = sorted(set(registry) | db_sources | set(latest_runs) | set(raw_adapters))
+
+    rows = []
+    for source_key in source_keys:
+        run = latest_runs.get(source_key)
+        registered = registry.get(source_key)
+        stats = total_stats.get(source_key, _ListingStats())
+        period = period_stats.get(source_key, _ListingStats())
+        adapter = (run.adapter if run else None) or raw_adapters.get(source_key) or (registered.adapter if registered else None)
+        quality = source_quality_tier(
+            adapter=adapter,
+            latest_status=run.status if run else None,
+            rows_extracted=run.rows_extracted if run else 0,
+            total_listings=stats.total,
+            average_description_length=stats.average_description_length,
+            short_description_count=stats.short_description_count,
+        )
+        rows.append(
+            SourceHealthItem(
+                source=source_key,
+                adapter=adapter,
+                latest_status=run.status if run else None,
+                latest_crawl_finished_at=run.finished_at if run else None,
+                pages_fetched=run.pages_fetched if run else 0,
+                pages_skipped=run.pages_skipped if run else 0,
+                rows_extracted=run.rows_extracted if run else 0,
+                rows_imported=run.rows_imported if run else 0,
+                total_listings=stats.total,
+                period_listings=period.total,
+                latest_listing_listed_at=stats.latest,
+                first_listing_listed_at=stats.first,
+                quality_tier=quality,
+                notes=_source_notes(registry=registered, adapter=adapter, run=run, stats=stats),
+            )
+        )
+
+    return sorted(
+        rows,
+        key=lambda item: (
+            item.total_listings == 0,
+            -(item.period_listings or 0),
+            -(item.total_listings or 0),
+            item.source,
+        ),
+    )
+
+
 def get_co_occurrence(session: Session, limit: int = 30, **filters) -> list[CoOccurrenceItem]:
     ids = [row[0] for row in session.execute(_listing_ids_subquery(session, **filters).select()).all()]
     if not ids:
@@ -383,4 +615,3 @@ def get_listings(
         total=total,
         total_pages=max(ceil(total / page_size), 1),
     )
-

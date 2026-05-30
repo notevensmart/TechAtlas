@@ -10,11 +10,18 @@ from app.schemas.api import (
     CoOccurrenceItem,
     ImportSummary,
     ListingsResponse,
+    MarketNote,
+    MarketSignalsSummary,
+    MomentumSignal,
+    RoleArchetypeSignal,
+    SkillClusterSignal,
+    SkillPathwaySignal,
     SkillDemandItem,
     SkillHistoryPoint,
+    SourceHealthItem,
     SummaryStats,
 )
-from app.services import analytics
+from app.services import analytics, market_signals
 
 
 router = APIRouter(prefix="/api/v1")
@@ -95,6 +102,62 @@ def stats_breakdowns(
     return analytics.get_breakdowns(db, **filters)
 
 
+@router.get("/sources/health", response_model=list[SourceHealthItem])
+def sources_health(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return analytics.get_sources_health(db, **filters)
+
+
+@router.get("/market/signals/summary", response_model=MarketSignalsSummary)
+def market_signals_summary(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_market_signals_summary(db, **filters)
+
+
+@router.get("/market/signals/clusters", response_model=list[SkillClusterSignal])
+def market_signal_clusters(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_cluster_signals(db, **filters)
+
+
+@router.get("/market/signals/archetypes", response_model=list[RoleArchetypeSignal])
+def market_signal_archetypes(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_archetype_signals(db, **filters)
+
+
+@router.get("/market/signals/momentum", response_model=list[MomentumSignal])
+def market_signal_momentum(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_momentum_signals(db, **filters)
+
+
+@router.get("/market/signals/pathways", response_model=list[SkillPathwaySignal])
+def market_signal_pathways(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_pathway_signals(db, **filters)
+
+
+@router.get("/market/signals/notes", response_model=list[MarketNote])
+def market_signal_notes(
+    filters: Annotated[dict, Depends(_filters)],
+    db: Session = Depends(db_session),
+):
+    return market_signals.get_market_notes(db, **filters)
+
+
 @router.get("/listings", response_model=ListingsResponse)
 def listings(
     filters: Annotated[dict, Depends(_filters)],
@@ -104,4 +167,3 @@ def listings(
     db: Session = Depends(db_session),
 ):
     return analytics.get_listings(db, page=page, page_size=page_size, search=search, **filters)
-

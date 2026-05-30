@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, BookOpen, Database, GitBranch, Table2 } from "lucide-react";
+import { BarChart3, BookOpen, Database, GitBranch, ShieldCheck, Table2 } from "lucide-react";
 import { api } from "./api/client";
 import { BreakdownList } from "./components/BreakdownList";
 import { CoOccurrencePanel } from "./components/CoOccurrencePanel";
@@ -10,17 +10,19 @@ import { ListingsTable } from "./components/ListingsTable";
 import { Methodology } from "./components/Methodology";
 import { MetricCard } from "./components/MetricCard";
 import { SkillDemandChart } from "./components/SkillDemandChart";
+import { SourceHealthView } from "./components/SourceHealthView";
 import { TrendChart } from "./components/TrendChart";
 import { useFilters } from "./hooks/useFilters";
 import { formatDate, formatNumber } from "./utils/format";
 
-type Tab = "overview" | "skills" | "relationships" | "listings" | "methodology";
+type Tab = "overview" | "skills" | "relationships" | "listings" | "coverage" | "methodology";
 
 const tabs: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
   { id: "skills", label: "Skills", icon: Database },
   { id: "relationships", label: "Relationships", icon: GitBranch },
   { id: "listings", label: "Listings", icon: Table2 },
+  { id: "coverage", label: "Coverage", icon: ShieldCheck },
   { id: "methodology", label: "Methodology", icon: BookOpen }
 ];
 
@@ -30,12 +32,23 @@ export default function App() {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const thirtyDayFilters = useMemo(() => ({ ...filters, days: "30" as const }), [filters]);
 
   const summary = useQuery({ queryKey: ["summary", filters], queryFn: () => api.summary(filters) });
   const imports = useQuery({ queryKey: ["imports"], queryFn: api.importSummary });
   const demand = useQuery({ queryKey: ["demand", filters], queryFn: () => api.demand(filters) });
   const breakdowns = useQuery({ queryKey: ["breakdowns", filters], queryFn: () => api.breakdowns(filters) });
   const coOccurrence = useQuery({ queryKey: ["cooccurrence", filters], queryFn: () => api.coOccurrence(filters) });
+  const sourceHealth = useQuery({
+    queryKey: ["source-health", filters],
+    queryFn: () => api.sourceHealth(filters),
+    enabled: tab === "coverage"
+  });
+  const sourceHealth30d = useQuery({
+    queryKey: ["source-health", thirtyDayFilters],
+    queryFn: () => api.sourceHealth(thirtyDayFilters),
+    enabled: tab === "coverage"
+  });
   const listings = useQuery({
     queryKey: ["listings", filters, page, search],
     queryFn: () => api.listings(filters, page, search)
@@ -159,9 +172,17 @@ export default function App() {
           <ListingsTable data={listings.data} search={search} onSearch={setSearch} page={page} onPage={setPage} />
         ) : null}
 
+        {tab === "coverage" ? (
+          <SourceHealthView
+            data={sourceHealth.data}
+            thirtyDayData={sourceHealth30d.data}
+            isLoading={sourceHealth.isLoading}
+            isError={sourceHealth.isError}
+          />
+        ) : null}
+
         {tab === "methodology" ? <Methodology /> : null}
       </main>
     </div>
   );
 }
-

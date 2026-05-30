@@ -6,6 +6,7 @@ import type {
   ListingsResponse,
   SkillDemandItem,
   SkillHistoryPoint,
+  SourceHealthItem,
   SummaryStats
 } from "../types/api";
 
@@ -39,6 +40,7 @@ export const api = {
   history: (skill: string, days: Filters["days"]) =>
     get<SkillHistoryPoint[]>("/api/v1/skills/history", { skill, days }),
   breakdowns: (filters: Filters) => get<BreakdownsResponse>("/api/v1/stats/breakdowns", { ...filters }),
+  sourceHealth: (filters: Filters) => get<SourceHealthItem[]>("/api/v1/sources/health", { ...filters }),
   coOccurrence: (filters: Filters) =>
     get<CoOccurrenceItem[]>("/api/v1/skills/co-occurrence", { ...filters, limit: 30 }),
   listings: (filters: Filters, page: number, search: string) =>

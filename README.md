@@ -15,6 +15,7 @@ TechAtlas V1 is a recruiter-facing full-stack analytics project. It imports real
 - Extracts skills from titles and descriptions with a YAML taxonomy.
 - Normalizes city, work mode, seniority, role family, and salary fields.
 - Computes demand, trend, breakdown, and co-occurrence analytics.
+- Shows source coverage, freshness, crawl health, and quality tiers in the dashboard.
 - Exposes a public read-only API under `/api/v1`.
 - Renders a light-theme dashboard with URL-synced filters.
 
@@ -106,6 +107,14 @@ TechAtlas can run its own local acquisition layer from [ingestion/sources.yml](i
 
 Platform feasibility notes are documented in [docs/platform_adapters.md](docs/platform_adapters.md).
 
+Run the conservative automated loop:
+
+```bash
+python -m ingestion.cli scheduled-crawl --profile conservative --canonical-output data/scheduled_crawl_latest.jsonl --rejects-dir data/rejects
+```
+
+This loads enabled registry sources, obeys robots rules, imports valid rows, refreshes aggregates, updates `last_seen_at`, and marks missing listings expired only after conservative successful-crawl/age thresholds.
+
 Run all enabled sources:
 
 ```bash
@@ -131,6 +140,20 @@ python -m ingestion.cli scout-sources data/careers_seed_urls.txt --output data/d
 ```
 
 If your local Windows CA certificates are broken, use `--insecure-skip-tls-verify` only for local debugging.
+
+Scheduler examples for Windows Task Scheduler, cron, and Railway are in [docs/crawler.md](docs/crawler.md).
+
+## Coverage View
+
+The dashboard includes a Coverage tab backed by `GET /api/v1/sources/health`. It shows where listings came from, the latest crawl status, fetched/skipped pages, extracted/imported rows, all-time listings, selected-range listings, listing freshness, compliance notes, and source quality.
+
+Quality tiers mean:
+
+- `high`: detail-level ATS, JSON-LD, or parsed PDF sources with stable IDs and useful descriptions.
+- `medium`: permitted sources with partial detail, such as CareerOne search-result cards, or APS PDF/detail sources with caveats.
+- `low`: failed crawls, zero-yield latest crawls, no current listings, or sources whose listing details appear incomplete.
+
+Blocked platforms are tracked separately from implemented sources. TechAtlas does not pretend blocked boards are covered; see [docs/platform_adapters.md](docs/platform_adapters.md).
 
 ## Crawl Ad Hoc Structured Pages
 
@@ -161,6 +184,7 @@ Core endpoints:
 - `GET /api/v1/skills/history`
 - `GET /api/v1/skills/co-occurrence`
 - `GET /api/v1/stats/breakdowns`
+- `GET /api/v1/sources/health`
 - `GET /api/v1/listings`
 
 FastAPI docs are available at `/docs` when the backend is running.
