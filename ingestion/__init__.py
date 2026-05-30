@@ -1,0 +1,2 @@
+"""TechAtlas ingestion package."""
+

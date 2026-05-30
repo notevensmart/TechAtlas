@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: techatlas
+    ports:
+      - "5432:5432"
+    volumes:
+      - techatlas-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d techatlas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  techatlas-postgres:
+

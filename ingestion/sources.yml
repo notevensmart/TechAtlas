@@ -1,0 +1,432 @@
+sources:
+  - key: lever:upguard
+    adapter: lever-html
+    enabled: true
+    seeds:
+      - https://jobs.lever.co/upguard
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company careers page; crawler obeys robots.txt and rate limits.
+
+  - key: lever:palantir
+    adapter: lever-html
+    enabled: true
+    seeds:
+      - https://jobs.lever.co/palantir
+    discover_depth: 1
+    max_urls: 120
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company careers page; crawler obeys robots.txt and rate limits.
+
+  - key: lever:myob
+    adapter: lever-html
+    enabled: true
+    seeds:
+      - https://jobs.lever.co/myob-2
+    discover_depth: 1
+    max_urls: 180
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company careers page; crawler obeys robots.txt and rate limits.
+
+  - key: lever:safetyculture-2
+    adapter: lever-html
+    enabled: true
+    seeds:
+      - https://jobs.lever.co/safetyculture-2
+    discover_depth: 1
+    max_urls: 180
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company careers page; crawler obeys robots.txt and rate limits.
+
+  - key: ashby:checkbox-technology
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/Checkbox%20Technology
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:lorikeet
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/Lorikeet
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:relevanceai
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/relevanceai
+    discover_depth: 1
+    max_urls: 120
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:ninjatech-ai
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/ninjatech.ai
+    discover_depth: 1
+    max_urls: 60
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:d-matrix
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/d-Matrix
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:breadcrumb
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/breadcrumb
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:heidihealth-com-au
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/heidihealth.com.au
+    discover_depth: 1
+    max_urls: 100
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:ignition
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/ignition
+    discover_depth: 1
+    max_urls: 100
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:openai
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/openai
+    discover_depth: 1
+    max_urls: 140
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:coreflow
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/coreflow
+    discover_depth: 1
+    max_urls: 100
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:harrison-ai
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/Harrison.ai
+    discover_depth: 1
+    max_urls: 100
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: ashby:dovetail
+    adapter: ashby-html
+    enabled: true
+    seeds:
+      - https://jobs.ashbyhq.com/dovetail
+    discover_depth: 1
+    max_urls: 100
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Ashby job board HTML; no private API dependency.
+
+  - key: generic:fiskil
+    adapter: generic-jsonld
+    enabled: true
+    seeds:
+      - https://www.fiskil.com/careers/software-engineer
+    discover_depth: 0
+    max_urls: 5
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company career page exposing schema.org JobPosting JSON-LD.
+
+  - key: generic:alloy
+    adapter: generic-jsonld
+    enabled: true
+    seeds:
+      - https://alloy.app/careers/software-engineer
+    discover_depth: 0
+    max_urls: 5
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public company career page exposing schema.org JobPosting JSON-LD.
+
+  - key: careerone:software-engineer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/software-engineer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:software-engineer-melbourne
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/software-engineer-jobs/in-melbourne-vic
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:software-engineer-brisbane
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/software-engineer-jobs/in-brisbane-qld
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:data-engineer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/data-engineer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:data-engineer-melbourne
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/data-engineer-jobs/in-melbourne-vic
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:data-analyst-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/data-analyst-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:cyber-security-analyst-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/cyber-security-analyst-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:devops-engineer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/devops-engineer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:ai-engineer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/ai-engineer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:frontend-developer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/frontend-developer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: careerone:backend-developer-sydney
+    adapter: careerone-search
+    enabled: true
+    seeds:
+      - https://www.careerone.com.au/backend-developer-jobs/in-sydney-nsw
+    discover_depth: 1
+    max_urls: 3
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public CareerOne search results page; crawler does not follow /jobview/ detail pages because robots.txt disallows them.
+
+  - key: greenhouse:roller
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/roller
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:karbon
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/karbon
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:optiver
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/optiverprivate
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:imc
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/imc
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:appian
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/appian
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:clickhouse
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/clickhouse
+    discover_depth: 1
+    max_urls: 160
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.
+
+  - key: greenhouse:anduril
+    adapter: greenhouse-html
+    enabled: true
+    seeds:
+      - https://job-boards.greenhouse.io/andurilindustries
+    discover_depth: 1
+    max_urls: 80
+    filters:
+      country: AU
+      tech_only: true
+    compliance_note: Public Greenhouse job board HTML; no private API dependency.

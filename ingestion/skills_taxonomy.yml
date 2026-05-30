@@ -1,0 +1,259 @@
+skills:
+  - name: Python
+    category: language
+    aliases: [python3, python 3]
+  - name: JavaScript
+    category: language
+    aliases: [js, javascript, ecmascript]
+  - name: TypeScript
+    category: language
+    aliases: [typescript, ts]
+  - name: Java
+    category: language
+    aliases: []
+  - name: C#
+    category: language
+    aliases: [c sharp, dotnet c#]
+  - name: C++
+    category: language
+    aliases: [cpp]
+  - name: Go
+    category: language
+    aliases: [Golang]
+    case_sensitive: true
+    patterns:
+      - '(?<![A-Za-z0-9])Go(?![A-Za-z0-9])'
+      - '(?<![A-Za-z0-9])Golang(?![A-Za-z0-9])'
+  - name: R
+    category: language
+    aliases: [R language]
+    case_sensitive: true
+    patterns:
+      - '(?<![A-Za-z0-9])R(?![A-Za-z0-9])'
+      - '(?<![A-Za-z0-9])R language(?![A-Za-z0-9])'
+  - name: Rust
+    category: language
+    aliases: []
+  - name: Kotlin
+    category: language
+    aliases: []
+  - name: Swift
+    category: language
+    aliases: []
+  - name: PHP
+    category: language
+    aliases: []
+  - name: SQL
+    category: data
+    aliases: [structured query language]
+  - name: HTML
+    category: frontend
+    aliases: [html5]
+  - name: CSS
+    category: frontend
+    aliases: [css3]
+  - name: React
+    category: frontend
+    aliases: [react.js, reactjs]
+  - name: Next.js
+    category: frontend
+    aliases: [nextjs, next js]
+  - name: Angular
+    category: frontend
+    aliases: [angularjs]
+  - name: Vue
+    category: frontend
+    aliases: [vue.js, vuejs]
+  - name: Svelte
+    category: frontend
+    aliases: [sveltekit]
+  - name: Tailwind CSS
+    category: frontend
+    aliases: [tailwind]
+  - name: Redux
+    category: frontend
+    aliases: [redux toolkit]
+  - name: Node.js
+    category: backend
+    aliases: [nodejs, node js, node]
+  - name: Express
+    category: backend
+    aliases: [express.js, expressjs]
+  - name: Django
+    category: backend
+    aliases: []
+  - name: Flask
+    category: backend
+    aliases: []
+  - name: FastAPI
+    category: backend
+    aliases: [fast api]
+  - name: Spring Boot
+    category: backend
+    aliases: [spring]
+  - name: .NET
+    category: backend
+    aliases: [dotnet, asp.net, asp net]
+  - name: REST APIs
+    category: backend
+    aliases: [rest api, restful api, restful apis]
+  - name: GraphQL
+    category: backend
+    aliases: []
+  - name: Microservices
+    category: backend
+    aliases: [microservice architecture]
+  - name: AWS
+    category: cloud
+    aliases: [amazon web services]
+  - name: Azure
+    category: cloud
+    aliases: [microsoft azure]
+  - name: GCP
+    category: cloud
+    aliases: [google cloud, google cloud platform]
+  - name: Serverless
+    category: cloud
+    aliases: [lambda, cloud functions, azure functions]
+  - name: PostgreSQL
+    category: database
+    aliases: [postgres, postgresql]
+  - name: MySQL
+    category: database
+    aliases: []
+  - name: SQL Server
+    category: database
+    aliases: [mssql, microsoft sql server]
+  - name: MongoDB
+    category: database
+    aliases: [mongo]
+  - name: Redis
+    category: database
+    aliases: []
+  - name: Elasticsearch
+    category: database
+    aliases: [elastic search, opensearch]
+  - name: Snowflake
+    category: data
+    aliases: []
+  - name: BigQuery
+    category: data
+    aliases: [google bigquery]
+  - name: Databricks
+    category: data
+    aliases: []
+  - name: Docker
+    category: devops
+    aliases: []
+  - name: Kubernetes
+    category: devops
+    aliases: [k8s, kube]
+  - name: Terraform
+    category: devops
+    aliases: []
+  - name: CI/CD
+    category: devops
+    aliases: [cicd, ci cd, github actions, gitlab ci, jenkins, buildkite]
+  - name: Linux
+    category: devops
+    aliases: [unix]
+  - name: Git
+    category: tooling
+    aliases: [github, gitlab, bitbucket]
+  - name: Jira
+    category: tooling
+    aliases: [atlassian jira]
+  - name: Agile
+    category: tooling
+    aliases: [scrum, kanban]
+  - name: Airflow
+    category: data
+    aliases: [apache airflow]
+  - name: Spark
+    category: data
+    aliases: [apache spark]
+    case_sensitive: true
+    patterns:
+      - '(?<![A-Za-z0-9])Spark(?![A-Za-z0-9])'
+      - '(?<![A-Za-z0-9])Apache Spark(?![A-Za-z0-9])'
+  - name: Kafka
+    category: data
+    aliases: [apache kafka]
+  - name: dbt
+    category: data
+    aliases: [data build tool]
+  - name: Pandas
+    category: data
+    aliases: [pandas]
+  - name: NumPy
+    category: data
+    aliases: [numpy]
+  - name: Power BI
+    category: data
+    aliases: [powerbi]
+  - name: Tableau
+    category: data
+    aliases: []
+  - name: Excel
+    category: data
+    aliases: [microsoft excel]
+  - name: PyTorch
+    category: AI/ML
+    aliases: [torch]
+  - name: TensorFlow
+    category: AI/ML
+    aliases: [tensorflow]
+  - name: scikit-learn
+    category: AI/ML
+    aliases: [sklearn, scikit learn]
+  - name: Machine Learning
+    category: AI/ML
+    aliases: [ml, predictive modelling, predictive modeling]
+  - name: Deep Learning
+    category: AI/ML
+    aliases: [neural networks, neural nets]
+  - name: NLP
+    category: AI/ML
+    aliases: [natural language processing]
+  - name: LLMs
+    category: AI/ML
+    aliases: [llm, large language models, large language model]
+  - name: RAG
+    category: AI/ML
+    aliases: [retrieval augmented generation, retrieval-augmented generation]
+  - name: Embeddings
+    category: AI/ML
+    aliases: [embedding models, vector embeddings]
+  - name: Vector Databases
+    category: AI/ML
+    aliases: [vector database, pinecone, weaviate, chroma, pgvector]
+  - name: LangChain
+    category: AI/ML
+    aliases: [langchain]
+  - name: MLOps
+    category: AI/ML
+    aliases: [ml ops, mlops]
+  - name: OpenAI API
+    category: AI/ML
+    aliases: [openai, chatgpt api]
+  - name: Hugging Face
+    category: AI/ML
+    aliases: [huggingface, transformers]
+  - name: Cypress
+    category: testing
+    aliases: []
+  - name: Playwright
+    category: testing
+    aliases: []
+  - name: Jest
+    category: testing
+    aliases: []
+  - name: Pytest
+    category: testing
+    aliases: [pytest]
+  - name: Selenium
+    category: testing
+    aliases: []
+  - name: TDD
+    category: testing
+    aliases: [test driven development]

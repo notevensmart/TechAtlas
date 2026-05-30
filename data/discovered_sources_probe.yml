@@ -1,0 +1,61 @@
+sources:
+- key: ashby:checkbox-technology
+  adapter: ashby-html
+  enabled: true
+  seeds:
+  - https://jobs.ashbyhq.com/Checkbox%20Technology
+  discover_depth: 1
+  max_urls: 100
+  filters:
+    country: AU
+    tech_only: true
+  compliance_note: Discovered from public careers HTML (ashby-host); crawler obeys
+    robots.txt and rate limits.
+- key: generic:alloy-app
+  adapter: generic-jsonld
+  enabled: true
+  seeds:
+  - https://alloy.app/careers/software-engineer
+  discover_depth: 1
+  max_urls: 100
+  filters:
+    country: AU
+    tech_only: true
+  compliance_note: Discovered from public careers HTML (jobposting-jsonld); crawler
+    obeys robots.txt and rate limits.
+- key: generic:www-fiskil-com
+  adapter: generic-jsonld
+  enabled: true
+  seeds:
+  - https://www.fiskil.com/careers/software-engineer
+  discover_depth: 1
+  max_urls: 100
+  filters:
+    country: AU
+    tech_only: true
+  compliance_note: Discovered from public careers HTML (jobposting-jsonld); crawler
+    obeys robots.txt and rate limits.
+- key: greenhouse:roller
+  adapter: greenhouse-html
+  enabled: true
+  seeds:
+  - https://job-boards.greenhouse.io/roller
+  discover_depth: 1
+  max_urls: 100
+  filters:
+    country: AU
+    tech_only: true
+  compliance_note: Discovered from public careers HTML (greenhouse-host); crawler
+    obeys robots.txt and rate limits.
+- key: lever:myob-2
+  adapter: lever-html
+  enabled: true
+  seeds:
+  - https://jobs.lever.co/myob-2
+  discover_depth: 1
+  max_urls: 100
+  filters:
+    country: AU
+    tech_only: true
+  compliance_note: Discovered from public careers HTML (lever-host); crawler obeys
+    robots.txt and rate limits.
