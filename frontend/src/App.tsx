@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, BookOpen, Database, GitBranch, ShieldCheck, Table2 } from "lucide-react";
+import { Activity, BarChart3, BookOpen, Database, GitBranch, ShieldCheck, Table2 } from "lucide-react";
 import { api } from "./api/client";
 import { BreakdownList } from "./components/BreakdownList";
 import { CoOccurrencePanel } from "./components/CoOccurrencePanel";
 import { EmptyState } from "./components/EmptyState";
 import { FilterBar } from "./components/FilterBar";
 import { ListingsTable } from "./components/ListingsTable";
+import { MarketSignalsView, type SignalsAudience } from "./components/MarketSignalsView";
 import { Methodology } from "./components/Methodology";
 import { MetricCard } from "./components/MetricCard";
 import { SkillDemandChart } from "./components/SkillDemandChart";
@@ -15,10 +16,11 @@ import { TrendChart } from "./components/TrendChart";
 import { useFilters } from "./hooks/useFilters";
 import { formatDate, formatNumber } from "./utils/format";
 
-type Tab = "overview" | "skills" | "relationships" | "listings" | "coverage" | "methodology";
+type Tab = "overview" | "signals" | "skills" | "relationships" | "listings" | "coverage" | "methodology";
 
 const tabs: { id: Tab; label: string; icon: typeof BarChart3 }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
+  { id: "signals", label: "Signals", icon: Activity },
   { id: "skills", label: "Skills", icon: Database },
   { id: "relationships", label: "Relationships", icon: GitBranch },
   { id: "listings", label: "Listings", icon: Table2 },
@@ -32,6 +34,7 @@ export default function App() {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [signalsAudience, setSignalsAudience] = useState<SignalsAudience>("recruiter");
   const thirtyDayFilters = useMemo(() => ({ ...filters, days: "30" as const }), [filters]);
 
   const summary = useQuery({ queryKey: ["summary", filters], queryFn: () => api.summary(filters) });
@@ -48,6 +51,16 @@ export default function App() {
     queryKey: ["source-health", thirtyDayFilters],
     queryFn: () => api.sourceHealth(thirtyDayFilters),
     enabled: tab === "coverage"
+  });
+  const signalSummary = useQuery({
+    queryKey: ["market-signals-summary", filters],
+    queryFn: () => api.signalSummary(filters),
+    enabled: tab === "signals"
+  });
+  const signalPathways = useQuery({
+    queryKey: ["market-signals-pathways", filters],
+    queryFn: () => api.signalPathways(filters),
+    enabled: tab === "signals" && signalsAudience === "candidate"
   });
   const listings = useQuery({
     queryKey: ["listings", filters, page, search],
@@ -156,6 +169,17 @@ export default function App() {
             <SkillDemandChart data={demand.data ?? []} onSelectSkill={setSelectedSkill} />
             <TrendChart skill={activeSkill} data={history.data ?? []} />
           </div>
+        ) : null}
+
+        {tab === "signals" ? (
+          <MarketSignalsView
+            audience={signalsAudience}
+            onAudienceChange={setSignalsAudience}
+            summary={signalSummary.data}
+            pathways={signalPathways.data}
+            isLoading={signalSummary.isLoading || signalPathways.isLoading}
+            isError={signalSummary.isError || signalPathways.isError}
+          />
         ) : null}
 
         {tab === "relationships" ? (

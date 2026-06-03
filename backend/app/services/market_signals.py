@@ -623,7 +623,12 @@ def _load_listing_records(
     ]
 
 
-def _load_momentum_records(session: Session, **filters) -> tuple[list[ListingSignalRecord], list[ListingSignalRecord]]:
+def _load_momentum_records(
+    session: Session,
+    *,
+    current_records: list[ListingSignalRecord] | None = None,
+    **filters,
+) -> tuple[list[ListingSignalRecord], list[ListingSignalRecord]]:
     latest = _latest_listing_at(session)
     if latest is None:
         return [], []
@@ -633,7 +638,10 @@ def _load_momentum_records(session: Session, **filters) -> tuple[list[ListingSig
     previous_end = current_start - timedelta(seconds=1)
     period_filters = dict(filters)
     period_filters["days"] = "all"
-    current = _load_listing_records(session, start=current_start, end=latest, **period_filters)
+    if current_records is not None and filters.get("days") != "all":
+        current = current_records
+    else:
+        current = _load_listing_records(session, start=current_start, end=latest, **period_filters)
     previous = _load_listing_records(session, start=previous_start, end=previous_end, **period_filters)
     return current, previous
 
@@ -701,10 +709,12 @@ def _clear_cluster_for_records(records: list[ListingSignalRecord]) -> bool:
     return counts.most_common(1)[0][1] >= max(1, round(len(records) * 0.45))
 
 
-def get_cluster_signals(session: Session, **filters) -> list[SkillClusterSignal]:
-    current_records = _load_listing_records(session, **filters)
+def _build_cluster_signals(
+    current_records: list[ListingSignalRecord],
+    current_momentum: list[ListingSignalRecord],
+    previous_momentum: list[ListingSignalRecord],
+) -> list[SkillClusterSignal]:
     total = len(current_records)
-    current_momentum, previous_momentum = _load_momentum_records(session, **filters)
     current_by_cluster = _records_by_cluster(current_records)
     momentum_by_cluster = _records_by_cluster(current_momentum)
     previous_by_cluster = _records_by_cluster(previous_momentum)
@@ -750,10 +760,22 @@ def get_cluster_signals(session: Session, **filters) -> list[SkillClusterSignal]
     return sorted(signals, key=lambda item: (-item.listing_count, item.name))
 
 
-def get_archetype_signals(session: Session, **filters) -> list[RoleArchetypeSignal]:
+def get_cluster_signals(session: Session, **filters) -> list[SkillClusterSignal]:
     current_records = _load_listing_records(session, **filters)
+    current_momentum, previous_momentum = _load_momentum_records(
+        session,
+        current_records=current_records,
+        **filters,
+    )
+    return _build_cluster_signals(current_records, current_momentum, previous_momentum)
+
+
+def _build_archetype_signals(
+    current_records: list[ListingSignalRecord],
+    current_momentum: list[ListingSignalRecord],
+    previous_momentum: list[ListingSignalRecord],
+) -> list[RoleArchetypeSignal]:
     total = len(current_records)
-    current_momentum, previous_momentum = _load_momentum_records(session, **filters)
     current_by_archetype = _records_by_archetype(current_records)
     momentum_by_archetype = _records_by_archetype(current_momentum)
     previous_by_archetype = _records_by_archetype(previous_momentum)
@@ -803,8 +825,20 @@ def get_archetype_signals(session: Session, **filters) -> list[RoleArchetypeSign
     return sorted(signals, key=lambda item: (-item.listing_count, item.name))
 
 
-def get_momentum_signals(session: Session, **filters) -> list[MomentumSignal]:
-    current_records, previous_records = _load_momentum_records(session, **filters)
+def get_archetype_signals(session: Session, **filters) -> list[RoleArchetypeSignal]:
+    current_records = _load_listing_records(session, **filters)
+    current_momentum, previous_momentum = _load_momentum_records(
+        session,
+        current_records=current_records,
+        **filters,
+    )
+    return _build_archetype_signals(current_records, current_momentum, previous_momentum)
+
+
+def _build_momentum_signals(
+    current_records: list[ListingSignalRecord],
+    previous_records: list[ListingSignalRecord],
+) -> list[MomentumSignal]:
     current_clusters = _records_by_cluster(current_records)
     previous_clusters = _records_by_cluster(previous_records)
     current_archetypes = _records_by_archetype(current_records)
@@ -823,6 +857,11 @@ def get_momentum_signals(session: Session, **filters) -> list[MomentumSignal]:
             signals.append(build_momentum_signal(archetype, "archetype", current_count, previous_count))
 
     return sorted(signals, key=lambda item: (-abs(item.delta_count), -item.current_count, item.name))
+
+
+def get_momentum_signals(session: Session, **filters) -> list[MomentumSignal]:
+    current_records, previous_records = _load_momentum_records(session, **filters)
+    return _build_momentum_signals(current_records, previous_records)
 
 
 def get_pathway_signals(session: Session, **filters) -> list[SkillPathwaySignal]:
@@ -873,8 +912,12 @@ def _top_pair(records: list[ListingSignalRecord], required_terms: set[str] | Non
     return skill_a, skill_b, count
 
 
-def get_market_notes(session: Session, **filters) -> list[MarketNote]:
-    records = _load_listing_records(session, **filters)
+def _build_market_notes(
+    records: list[ListingSignalRecord],
+    clusters: list[SkillClusterSignal],
+    archetypes: list[RoleArchetypeSignal],
+    momentum: list[MomentumSignal],
+) -> list[MarketNote]:
     if not records:
         return [
             MarketNote(
@@ -891,9 +934,6 @@ def get_market_notes(session: Session, **filters) -> list[MarketNote]:
             ),
         ]
 
-    clusters = get_cluster_signals(session, **filters)
-    archetypes = get_archetype_signals(session, **filters)
-    momentum = get_momentum_signals(session, **filters)
     notes: list[MarketNote] = []
 
     top_cluster = next((cluster for cluster in clusters if cluster.listing_count), None)
@@ -1009,12 +1049,30 @@ def get_market_notes(session: Session, **filters) -> list[MarketNote]:
     return notes[:8]
 
 
+def get_market_notes(session: Session, **filters) -> list[MarketNote]:
+    records = _load_listing_records(session, **filters)
+    current_momentum, previous_momentum = _load_momentum_records(
+        session,
+        current_records=records,
+        **filters,
+    )
+    clusters = _build_cluster_signals(records, current_momentum, previous_momentum)
+    archetypes = _build_archetype_signals(records, current_momentum, previous_momentum)
+    momentum = _build_momentum_signals(current_momentum, previous_momentum)
+    return _build_market_notes(records, clusters, archetypes, momentum)
+
+
 def get_market_signals_summary(session: Session, **filters) -> MarketSignalsSummary:
     records = _load_listing_records(session, **filters)
-    clusters = get_cluster_signals(session, **filters)
-    archetypes = get_archetype_signals(session, **filters)
-    momentum = get_momentum_signals(session, **filters)
-    notes = get_market_notes(session, **filters)
+    current_momentum, previous_momentum = _load_momentum_records(
+        session,
+        current_records=records,
+        **filters,
+    )
+    clusters = _build_cluster_signals(records, current_momentum, previous_momentum)
+    archetypes = _build_archetype_signals(records, current_momentum, previous_momentum)
+    momentum = _build_momentum_signals(current_momentum, previous_momentum)
+    notes = _build_market_notes(records, clusters, archetypes, momentum)
     recruiter_difficulty = score_recruiter_difficulty(
         records,
         total_records=len(records),

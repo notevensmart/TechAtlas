@@ -2,13 +2,15 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models import CrawlRun
 from app.services.crawler import CrawlConfig
 from app.services.freshness import (
     DEFAULT_EXPIRE_AFTER_DAYS,
@@ -28,6 +30,8 @@ from app.services.source_registry import DEFAULT_SOURCES_PATH, SourceDefinition,
 
 
 DEFAULT_USER_AGENT = "TechAtlasBot/0.1 (+local portfolio project)"
+DEFAULT_ABANDON_RUNNING_AFTER_MINUTES = 180
+ProgressCallback = Callable[[dict[str, Any]], None]
 
 
 @dataclass(frozen=True)
@@ -36,6 +40,7 @@ class CrawlProfile:
     max_urls: int
     delay_seconds: float
     timeout_seconds: float
+    max_source_runtime_seconds: float
 
 
 CRAWL_PROFILES: dict[str, CrawlProfile] = {
@@ -44,18 +49,21 @@ CRAWL_PROFILES: dict[str, CrawlProfile] = {
         max_urls=25,
         delay_seconds=3.0,
         timeout_seconds=20.0,
+        max_source_runtime_seconds=600.0,
     ),
     "normal": CrawlProfile(
         name="normal",
         max_urls=100,
         delay_seconds=1.5,
         timeout_seconds=20.0,
+        max_source_runtime_seconds=1800.0,
     ),
     "heavy": CrawlProfile(
         name="heavy",
         max_urls=300,
         delay_seconds=2.0,
         timeout_seconds=30.0,
+        max_source_runtime_seconds=5400.0,
     ),
 }
 
@@ -141,6 +149,7 @@ def resolve_crawl_profile(
     max_urls: int | None = None,
     delay: float | None = None,
     timeout: float | None = None,
+    source_timeout: float | None = None,
 ) -> CrawlProfile:
     profile = CRAWL_PROFILES.get(profile_name)
     if profile is None:
@@ -150,6 +159,9 @@ def resolve_crawl_profile(
         max_urls=max_urls if max_urls is not None else profile.max_urls,
         delay_seconds=delay if delay is not None else profile.delay_seconds,
         timeout_seconds=timeout if timeout is not None else profile.timeout_seconds,
+        max_source_runtime_seconds=(
+            source_timeout if source_timeout is not None else profile.max_source_runtime_seconds
+        ),
     )
 
 
@@ -192,6 +204,38 @@ def _default_session_factory():
     from app.db.session import SessionLocal
 
     return SessionLocal
+
+
+def _emit(progress: ProgressCallback | None, event: str, **fields: Any) -> None:
+    if progress is None:
+        return
+    progress({"event": event, **fields})
+
+
+def abandon_stale_crawl_runs(
+    session: Session,
+    *,
+    stale_before: datetime,
+    abandon_after_minutes: int,
+    now: datetime | None = None,
+) -> int:
+    stale_runs = session.scalars(
+        select(CrawlRun).where(
+            CrawlRun.status == "running",
+            CrawlRun.started_at < stale_before,
+            CrawlRun.finished_at.is_(None),
+        )
+    ).all()
+    finished_at = now or datetime.now(timezone.utc)
+    for run in stale_runs:
+        run.status = "abandoned"
+        run.finished_at = finished_at
+        run.error_message = (
+            "Marked abandoned by scheduled-crawl startup because the previous process "
+            f"left this run in progress for more than {abandon_after_minutes} minutes."
+        )
+    session.commit()
+    return len(stale_runs)
 
 
 def _rejects_path(rejects_dir: Path | None, source_key: str) -> Path | None:
@@ -243,6 +287,7 @@ def run_scheduled_crawl(
     max_urls: int | None = None,
     delay: float | None = None,
     timeout: float | None = None,
+    source_timeout: float | None = None,
     canonical_output_path: Path | None = None,
     rejects_dir: Path | None = None,
     insecure_skip_tls_verify: bool = False,
@@ -250,12 +295,20 @@ def run_scheduled_crawl(
     expire_after_days: int = DEFAULT_EXPIRE_AFTER_DAYS,
     expire_after_successful_crawls: int = DEFAULT_EXPIRE_AFTER_SUCCESSFUL_CRAWLS,
     expire_partial_sources: bool = False,
+    abandon_running_after_minutes: int | None = DEFAULT_ABANDON_RUNNING_AFTER_MINUTES,
     dry_run: bool = False,
+    progress: ProgressCallback | None = None,
     session_factory: Callable[[], Any] | None = None,
     crawler_factory: Callable[[CrawlConfig], SourceCrawler] = SourceCrawler,
 ) -> ScheduledCrawlResult:
     started_at = datetime.now(timezone.utc)
-    profile = resolve_crawl_profile(profile_name, max_urls=max_urls, delay=delay, timeout=timeout)
+    profile = resolve_crawl_profile(
+        profile_name,
+        max_urls=max_urls,
+        delay=delay,
+        timeout=timeout,
+        source_timeout=source_timeout,
+    )
     selected_sources = select_sources(registry_path, selected_source_keys=selected_source_keys)
     sources = [
         apply_profile_to_source(source, profile, max_urls_override=max_urls is not None)
@@ -279,11 +332,29 @@ def run_scheduled_crawl(
         )
 
     session_factory = session_factory or _default_session_factory()
+    if abandon_running_after_minutes is not None:
+        stale_before = started_at - timedelta(minutes=abandon_running_after_minutes)
+        with session_factory() as session:
+            abandoned = abandon_stale_crawl_runs(
+                session,
+                stale_before=stale_before,
+                abandon_after_minutes=abandon_running_after_minutes,
+                now=started_at,
+            )
+        if abandoned:
+            _emit(
+                progress,
+                "stale_runs_abandoned",
+                count=abandoned,
+                stale_before=stale_before.isoformat(),
+            )
+
     crawler = crawler_factory(
         CrawlConfig(
             request_delay_seconds=profile.delay_seconds,
             max_urls=profile.max_urls,
             timeout_seconds=profile.timeout_seconds,
+            max_runtime_seconds=profile.max_source_runtime_seconds,
             user_agent=user_agent,
             obey_robots=True,
             verify_tls=not insecure_skip_tls_verify,
@@ -293,6 +364,15 @@ def run_scheduled_crawl(
     canonical_rows: list[dict[str, object]] = []
     source_results: list[SourceScheduledResult] = []
     for source in sources:
+        _emit(
+            progress,
+            "source_started",
+            source=source.key,
+            adapter=source.adapter,
+            max_urls=source.max_urls,
+            discover_depth=source.discover_depth,
+            source_timeout_seconds=profile.max_source_runtime_seconds,
+        )
         with session_factory() as session:
             run = create_crawl_run(session, source)
 
@@ -348,11 +428,28 @@ def run_scheduled_crawl(
             source_result.expired_listings = expiry.expired_listings
             source_result.expiry_skipped_reason = expiry.skipped_reason
             source_result.status = "completed"
+            _emit(
+                progress,
+                "source_completed",
+                source=source.key,
+                pages_fetched=source_result.pages_fetched,
+                pages_skipped=source_result.pages_skipped,
+                rows_extracted=source_result.rows_extracted,
+                rows_imported=source_result.rows_imported,
+                rows_rejected=source_result.rows_rejected,
+                expired_listings=source_result.expired_listings,
+            )
         except Exception as exc:
             source_result.status = "failed"
             source_result.error_message = str(exc)
             with session_factory() as session:
                 finish_crawl_run(session, run.id, status="failed", error_message=str(exc))
+            _emit(
+                progress,
+                "source_failed",
+                source=source.key,
+                error_message=str(exc),
+            )
         source_results.append(source_result)
 
     if canonical_output_path:

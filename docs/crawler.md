@@ -81,9 +81,9 @@ python -m ingestion.cli source-report
 
 Profiles:
 
-- `conservative`: caps each source at 25 URLs, uses a 3.0 second per-host delay, and is the default for unattended jobs.
-- `normal`: keeps current practical source limits where configured, with a 1.5 second per-host delay.
-- `heavy`: raises source limits to at least 300 URLs, with a 2.0 second per-host delay and a longer request timeout.
+- `conservative`: caps each source at 25 URLs, uses a 3.0 second per-host delay, caps each source at 600 seconds, and is the default for unattended jobs.
+- `normal`: keeps current practical source limits where configured, with a 1.5 second per-host delay and a 1800 second source runtime cap.
+- `heavy`: raises source limits to at least 300 URLs, with a 2.0 second per-host delay, a longer request timeout, and a 5400 second source runtime cap.
 
 Overrides:
 
@@ -92,6 +92,10 @@ python -m ingestion.cli scheduled-crawl --profile conservative --max-urls 10 --d
 ```
 
 Profiles and overrides never disable `robots.txt`; the scheduler always constructs the crawler with `obey_robots=True`.
+
+Use `--source-timeout` to override the wall-clock runtime cap for each source. When a source exceeds its cap, that source is marked failed and later sources continue. Scheduled crawls also emit JSON progress lines as sources start, complete, or fail, so cron logs show where a run stopped.
+
+If a previous process was killed mid-source, its `crawl_runs` row can remain `running`. By default, scheduled startup marks unfinished runs older than 180 minutes as `abandoned`; override this with `--abandon-running-after-minutes`.
 
 ## Freshness And Expiry
 

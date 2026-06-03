@@ -8,6 +8,7 @@ from html import unescape
 from html.parser import HTMLParser
 import json
 import re
+import time
 from typing import Any
 from urllib.parse import parse_qs, quote, unquote, urlparse
 import zlib
@@ -84,6 +85,10 @@ class SourceCrawlResult:
     @property
     def pages_skipped(self) -> int:
         return len(self.skipped_urls)
+
+
+class SourceCrawlRuntimeExceeded(RuntimeError):
+    pass
 
 
 class MetaParser(HTMLParser):
@@ -1038,6 +1043,14 @@ class SourceCrawler:
         records: list[ExtractedJobRecord] = []
 
         limiter = HostRateLimiter(self.config.request_delay_seconds)
+        started_at = time.monotonic()
+
+        def runtime_exceeded() -> bool:
+            return (
+                self.config.max_runtime_seconds is not None
+                and time.monotonic() - started_at >= self.config.max_runtime_seconds
+            )
+
         with httpx.Client(
             timeout=self.config.timeout_seconds,
             follow_redirects=True,
@@ -1045,6 +1058,10 @@ class SourceCrawler:
         ) as client:
             robots = RobotsPolicy(client, self.config)
             while queue and len(visited) < max_urls:
+                if runtime_exceeded():
+                    raise SourceCrawlRuntimeExceeded(
+                        f"source crawl exceeded {self.config.max_runtime_seconds:.0f} seconds"
+                    )
                 url, depth = queue.popleft()
                 normalized = normalize_url(url)
                 if not normalized or normalized in seen:

@@ -240,6 +240,9 @@ def _scheduled_crawl(args: argparse.Namespace) -> None:
 
     from app.services.scheduled_crawl import run_scheduled_crawl
 
+    def print_progress(event: dict[str, object]) -> None:
+        print(json.dumps(event, ensure_ascii=True, sort_keys=True), flush=True)
+
     try:
         result = run_scheduled_crawl(
             registry_path=Path(args.sources) if args.sources else None,
@@ -248,6 +251,7 @@ def _scheduled_crawl(args: argparse.Namespace) -> None:
             max_urls=args.max_urls,
             delay=args.delay,
             timeout=args.timeout,
+            source_timeout=args.source_timeout,
             canonical_output_path=Path(args.canonical_output) if args.canonical_output else None,
             rejects_dir=Path(args.rejects_dir) if args.rejects_dir else None,
             insecure_skip_tls_verify=args.insecure_skip_tls_verify,
@@ -255,7 +259,9 @@ def _scheduled_crawl(args: argparse.Namespace) -> None:
             expire_after_days=args.expire_after_days,
             expire_after_successful_crawls=args.expire_after_successful_crawls,
             expire_partial_sources=args.expire_partial_sources,
+            abandon_running_after_minutes=args.abandon_running_after_minutes,
             dry_run=args.dry_run,
+            progress=None if args.dry_run else print_progress,
         )
     except Exception as exc:
         print(
@@ -448,6 +454,7 @@ def build_parser() -> argparse.ArgumentParser:
     scheduled_parser.add_argument("--max-urls", type=int, help="Override profile/source max pages per source")
     scheduled_parser.add_argument("--delay", type=float, help="Override profile per-host delay between requests")
     scheduled_parser.add_argument("--timeout", type=float, help="Override profile HTTP request timeout in seconds")
+    scheduled_parser.add_argument("--source-timeout", type=float, help="Override wall-clock timeout per source in seconds")
     scheduled_parser.add_argument(
         "--user-agent",
         default="TechAtlasBot/0.1 (+local portfolio project)",
@@ -477,6 +484,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--expire-partial-sources",
         action="store_true",
         help="Allow expiry for partial or low-confidence adapters such as search-result card sources",
+    )
+    scheduled_parser.add_argument(
+        "--abandon-running-after-minutes",
+        type=int,
+        default=180,
+        help="Mark unfinished running crawl rows older than this many minutes as abandoned before starting",
     )
     scheduled_parser.add_argument(
         "--insecure-skip-tls-verify",

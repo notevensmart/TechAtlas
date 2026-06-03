@@ -410,7 +410,7 @@ def source_quality_tier(
     average_description_length: float | None,
     short_description_count: int,
 ) -> str:
-    if latest_status == "failed":
+    if latest_status in {"failed", "abandoned"}:
         return "low"
     if latest_status is not None and rows_extracted == 0:
         return "low"
@@ -443,9 +443,10 @@ def _source_notes(
         notes.append("Disabled in the source registry.")
     if registry and registry.compliance_note:
         notes.append(registry.compliance_note)
-    if run and run.status == "failed":
+    if run and run.status in {"failed", "abandoned"}:
         detail = f": {run.error_message}" if run.error_message else "."
-        notes.append(f"Latest crawl failed{detail}")
+        label = "failed" if run.status == "failed" else "was abandoned"
+        notes.append(f"Latest crawl {label}{detail}")
     elif run and run.status == "completed" and run.rows_extracted == 0:
         notes.append("Latest crawl completed but extracted zero rows.")
     elif run and run.status == "completed" and run.rows_imported == 0:

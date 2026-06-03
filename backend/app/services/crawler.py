@@ -36,6 +36,7 @@ class CrawlConfig:
     user_agent: str = "TechAtlasBot/0.1 (+local portfolio project)"
     request_delay_seconds: float = 1.5
     timeout_seconds: float = 20
+    max_runtime_seconds: float | None = None
     max_urls: int = 100
     discover_depth: int = 0
     obey_robots: bool = True

@@ -4,8 +4,14 @@ import type {
   Filters,
   ImportSummary,
   ListingsResponse,
+  MarketNote,
+  MarketSignalsSummary,
+  MomentumSignal,
+  RoleArchetypeSignal,
+  SkillClusterSignal,
   SkillDemandItem,
   SkillHistoryPoint,
+  SkillPathwaySignal,
   SourceHealthItem,
   SummaryStats
 } from "../types/api";
@@ -41,6 +47,13 @@ export const api = {
     get<SkillHistoryPoint[]>("/api/v1/skills/history", { skill, days }),
   breakdowns: (filters: Filters) => get<BreakdownsResponse>("/api/v1/stats/breakdowns", { ...filters }),
   sourceHealth: (filters: Filters) => get<SourceHealthItem[]>("/api/v1/sources/health", { ...filters }),
+  signalSummary: (filters: Filters) => get<MarketSignalsSummary>("/api/v1/market/signals/summary", { ...filters }),
+  signalClusters: (filters: Filters) => get<SkillClusterSignal[]>("/api/v1/market/signals/clusters", { ...filters }),
+  signalArchetypes: (filters: Filters) =>
+    get<RoleArchetypeSignal[]>("/api/v1/market/signals/archetypes", { ...filters }),
+  signalMomentum: (filters: Filters) => get<MomentumSignal[]>("/api/v1/market/signals/momentum", { ...filters }),
+  signalPathways: (filters: Filters) => get<SkillPathwaySignal[]>("/api/v1/market/signals/pathways", { ...filters }),
+  signalNotes: (filters: Filters) => get<MarketNote[]>("/api/v1/market/signals/notes", { ...filters }),
   coOccurrence: (filters: Filters) =>
     get<CoOccurrenceItem[]>("/api/v1/skills/co-occurrence", { ...filters, limit: 30 }),
   listings: (filters: Filters, page: number, search: string) =>

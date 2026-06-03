@@ -2,7 +2,7 @@
 
 Australian tech job market intelligence for real, permitted job-posting exports.
 
-TechAtlas V1 is a recruiter-facing full-stack analytics project. It imports real CSV/JSONL job data or crawls configured public careers pages, stores it in PostgreSQL, extracts skills through a transparent taxonomy, and serves market demand insights through a FastAPI API and React dashboard.
+TechAtlas V1 is a recruiter and candidate-facing full-stack analytics project. It imports real CSV/JSONL job data or crawls configured public careers pages, stores it in PostgreSQL, extracts skills through a transparent taxonomy, and serves market demand, hiring difficulty, and career pathway signals through a FastAPI API and React dashboard.
 
 ## What V1 Does
 
@@ -15,6 +15,10 @@ TechAtlas V1 is a recruiter-facing full-stack analytics project. It imports real
 - Extracts skills from titles and descriptions with a YAML taxonomy.
 - Normalizes city, work mode, seniority, role family, and salary fields.
 - Computes demand, trend, breakdown, and co-occurrence analytics.
+- Computes rule-based Market Signals for recruiters and candidates.
+- Groups postings into skill clusters and practical role archetypes.
+- Scores hiring difficulty and candidate opportunity with explainable reasons.
+- Shows role pathways with core, adjacent, stretch, and related skills.
 - Shows source coverage, freshness, crawl health, and quality tiers in the dashboard.
 - Exposes a public read-only API under `/api/v1`.
 - Renders a light-theme dashboard with URL-synced filters.
@@ -155,6 +159,15 @@ Quality tiers mean:
 
 Blocked platforms are tracked separately from implemented sources. TechAtlas does not pretend blocked boards are covered; see [docs/platform_adapters.md](docs/platform_adapters.md).
 
+## Signals View
+
+The dashboard includes a Signals tab backed by `/api/v1/market/signals/*`. It has two audience modes:
+
+- Recruiter: top role archetypes, skill clusters by demand, momentum, hiring difficulty, and recruiter market notes.
+- Candidate: opportunity scores, role pathways, core/adjacent/stretch skills, related archetypes, and candidate market notes.
+
+Market Signals V1 is deliberately rule-based. It does not use LLM-generated advice and does not claim perfect labour-market truth. It converts available postings into transparent signals that can be inspected through the returned reasons and methodology docs.
+
 ## Crawl Ad Hoc Structured Pages
 
 TechAtlas includes crawler logic for permitted sites that expose `schema.org/JobPosting` JSON-LD.
@@ -185,6 +198,12 @@ Core endpoints:
 - `GET /api/v1/skills/co-occurrence`
 - `GET /api/v1/stats/breakdowns`
 - `GET /api/v1/sources/health`
+- `GET /api/v1/market/signals/summary`
+- `GET /api/v1/market/signals/clusters`
+- `GET /api/v1/market/signals/archetypes`
+- `GET /api/v1/market/signals/momentum`
+- `GET /api/v1/market/signals/pathways`
+- `GET /api/v1/market/signals/notes`
 - `GET /api/v1/listings`
 
 FastAPI docs are available at `/docs` when the backend is running.
